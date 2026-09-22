@@ -14,12 +14,18 @@ import (
 
 func Deploy(db *sql.DB, path string) error {
 	appName := filepath.Base(path)
-
 	fmt.Println("App name:", appName)
+
+	_, err := database.GetApp(db, appName)
+
+	if err == nil {
+		return fmt.Errorf("app '%s' already exists", appName)
+	}
+
 
 	dockerfile := filepath.Join(path, "Dockerfile")
 
-	_, err := os.Stat(dockerfile)
+	_, err = os.Stat(dockerfile)
 
 	if err != nil {
 		return fmt.Errorf("Dockerfile not found")
@@ -53,6 +59,16 @@ func Deploy(db *sql.DB, path string) error {
 	}
 
 	fmt.Println("Assigned port:", port)
+
+	fmt.Println("Running health check...")
+
+	err = docker.HealthCheck(port)
+
+	if err != nil {
+		return err
+	}
+
+	fmt.Println("Health check passed!")
 
 	app := models.App{
 		Name:        appName,
@@ -101,4 +117,56 @@ func Deploy(db *sql.DB, path string) error {
 	fmt.Println("Caddy reloaded!")
 
 	return nil
+}
+
+
+func List(db *sql.DB) error {
+	apps, err := database.GetApps(db)
+
+	if err != nil {
+		return err
+	}
+
+	fmt.Println("NAME\tCONTAINER ID\tPORT")
+
+	for _, app := range apps {
+		fmt.Printf(
+			"%s\t%.12s\t%d\n",
+			app.Name,
+			app.ContainerID,
+			app.Port,
+		)
+	}
+
+	return nil
+}
+
+
+func Stop(db *sql.DB, appName string) error {
+	app, err := database.GetApp(db, appName)
+
+	if err != nil {
+		return fmt.Errorf("app not found: %s", appName)
+	}
+
+	err = docker.Stop(app.ContainerID)
+
+	if err != nil {
+		return err
+	}
+
+	fmt.Println("Stopped:", app.Name)
+
+	return nil
+}
+
+
+func Logs(db *sql.DB, appName string) error {
+	app, err := database.GetApp(db, appName)
+
+	if err != nil {
+		return fmt.Errorf("app not found: %s", appName)
+	}
+
+	return docker.Logs(app.ContainerID)
 }

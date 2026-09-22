@@ -50,6 +50,37 @@ func main() {
 			fmt.Println("Deploy failed:", err)
 		}
 
+	case "list":
+	err := cmd.List(db)
+
+	if err != nil {
+		fmt.Println("List failed:", err)
+	}
+
+	case "stop":
+	if len(os.Args) < 3 {
+		fmt.Println("Usage: dockyard stop <app>")
+		return
+	}
+
+	err := cmd.Stop(db, os.Args[2])
+
+	if err != nil {
+		fmt.Println("Stop failed:", err)
+	}
+
+	case "logs":
+	if len(os.Args) < 3 {
+		fmt.Println("Usage: dockyard logs <app>")
+		return
+	}
+
+	err := cmd.Logs(db, os.Args[2])
+
+	if err != nil {
+		fmt.Println("Logs failed:", err)
+	}
+
 	default:
 
 		fmt.Println("Unknown command:", command)

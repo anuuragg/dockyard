@@ -64,3 +64,19 @@ func GetApps(db *sql.DB) ([]models.App, error) {
 
 	return apps, nil
 }
+
+
+func GetApp(db *sql.DB, name string) (models.App, error) {
+	var app models.App
+
+	err := db.QueryRow(
+		"SELECT name, container_id, port FROM apps WHERE name = ?",
+		name,
+	).Scan(
+		&app.Name,
+		&app.ContainerID,
+		&app.Port,
+	)
+
+	return app, err
+}
